@@ -14,12 +14,11 @@ resource "google_compute_firewall" "n8n_firewall" {
 
   allow {
     protocol = "tcp"
-    # Unified list: 80/443 for HTTPS, 5678 for n8n dashboard
+    # Port 80/443 for HTTPS certificate & Telegram, 5678 for dashboard
     ports    = ["80", "443", "5678"]
   }
 
   source_ranges = ["0.0.0.0/0"]
-  # This MUST match the tag on the VM below
   target_tags   = ["n8n-node"] 
 }
 
@@ -29,8 +28,7 @@ resource "google_compute_instance" "n8n_vm" {
   machine_type = "e2-small"
   zone         = "us-central1-a"
   
-  # This TAG is what opens the ports. 
-  # If this is missing or misspelled, HTTPS will fail.
+  # Crucial: This links the VM to the Firewall above
   tags         = ["n8n-node"] 
 
   boot_disk {
@@ -47,15 +45,12 @@ resource "google_compute_instance" "n8n_vm" {
     }
   }
 
-  scheduling {
-    preemptible        = true
-    provisioning_model = "SPOT"
-    automatic_restart  = false
-  }
+  # REMOVED PREEMPTIBLE/SPOT BLOCK
+  # Default is now On-Demand (Reliable for Class)
 
   metadata_startup_script = <<-EOT
     #!/bin/bash
-    # Create Swap (Emergency RAM)
+    # Create 2GB Swap (Ensures n8n doesn't crash on small RAM)
     fallocate -l 2G /swapfile
     chmod 600 /swapfile
     mkswap /swapfile
@@ -66,7 +61,7 @@ resource "google_compute_instance" "n8n_vm" {
     apt-get update && apt-get install -y docker.io
     systemctl enable --now docker
 
-    # Prepare data folder
+    # Prepare persistent data folder
     mkdir -p /home/ubuntu/n8n-data
     chown -R 1000:1000 /home/ubuntu/n8n-data
   EOT
