@@ -1,1 +1,110 @@
-[![Open in Cloud Shell](https://gstatic.com/cloudssh/images/open-btn.svg)](https://shell.cloud.google.com/cloudshell/editor?cloudshell_git_repo=YOUR_GITHUB_REPO_URL)
+# 🚀 n8n Deployment Guide: GCP + DuckDNS + HTTPS
+
+This guide provides a streamlined process for deploying n8n on Google Compute Engine using Terraform, with a permanent free domain and automatic SSL (HTTPS) for full compatibility with Telegram, Stripe, and other secure webhooks.
+
+---
+
+## 📋 Prerequisites
+- A **Google Cloud Platform** project with billing enabled.
+- A free **DuckDNS** account.
+
+---
+
+## Phase 1: Claim Your Permanent URL
+Before touching the code, you must claim your free "name" on the internet.
+
+1. Go to [DuckDNS.org](https://www.duckdns.org) and sign in.
+2. Under **subdomains**, type a unique name (e.g., `jsmith-n8n`) and click **add domain**.
+3. **Copy your Token and Subdomain name.** You will need these for Phase 3.
+
+---
+
+## Phase 2: Launch the Infrastructure
+We will use **Google Cloud Shell** to provision the server using Terraform.
+
+1. Open **Google Cloud Shell**.
+2. Run these commands to build the server:
+   ```bash
+   # 1. Enable the Compute Engine API
+   gcloud services enable compute.googleapis.com
+
+   # 2. Clone the deployment repository
+   git clone [https://github.com/zalzah00/gce-n8n.git](https://github.com/zalzah00/gce-n8n.git)
+   cd gce-n8n
+
+   # 3. Initialize and apply Terraform
+   terraform init
+   terraform apply -var="project_id=$(gcloud config get-value project)" -auto-approve
+   ```
+3. Once complete, log into your new server via SSH:
+   ```bash
+   gcloud compute ssh n8n-server --zone=us-central1-a
+   ```
+   *(If prompted, press **Y** and hit **Enter** twice to skip the passphrase).*
+
+---
+
+## Phase 3: The "One-Touch" Student Setup
+Once you are **inside** the server terminal (prompt says `ubuntu@n8n-server`), copy the block below into a notepad, **edit the first two lines**, then paste it into the terminal.
+
+```bash
+# --- ⚠️ EDIT THE TWO LINES BELOW ⚠️ ---
+DOMAIN="your-subdomain-here"
+TOKEN="your-token-here"
+# --------------------------------------
+
+# 1. Update DuckDNS to point to this server's IP
+echo "Linking \$DOMAIN.duckdns.org to this server..."
+curl -s "[https://www.duckdns.org/update?domains=](https://www.duckdns.org/update?domains=)\$DOMAIN&token=\$TOKEN&ip="
+
+# 2. Setup the HTTPS config (Caddyfile)
+cat <<EOF > Caddyfile
+\$DOMAIN.duckdns.org {
+    reverse_proxy localhost:5678
+}
+EOF
+
+# 3. Launch the HTTPS Provider (Caddy)
+sudo docker run -d --name caddy --restart always \
+  -p 80:80 -p 443:443 \
+  --network host \
+  -v \$(pwd)/Caddyfile:/etc/caddy/Caddyfile \
+  -v caddy_data:/data \
+  caddy
+
+# 4. Launch n8n (The Automation Engine)
+sudo docker run -d --name n8n --restart always \
+  -p 5678:5678 \
+  -v /home/ubuntu/n8n-data:/home/node/.n8n \
+  -e WEBHOOK_URL="https://\$DOMAIN.duckdns.org/" \
+  n8nio/n8n
+
+echo "--------------------------------------------------------"
+echo "✅ SETUP INITIATED!"
+echo "Wait 2 minutes for the SSL certificate to generate."
+echo "Your n8n link: https://\$DOMAIN.duckdns.org"
+echo "--------------------------------------------------------"
+```
+
+---
+
+## 💡 Important Tips for Success
+
+### 1. The "2-Minute" Rule
+After running the script, your server needs about 120 seconds to "handshake" with the certificate authority. If you see a privacy error, simply wait and refresh.
+
+### 2. Telegram Compatibility
+Because this setup uses `https`, Telegram and other services will work perfectly. Always ensure your bot settings use the `https://` version of your URL.
+
+### 3. Saving Your $5 Budget
+To save credits, **STOP** your instance in the Google Cloud Console when not in use. 
+- **To Resume:** Start the instance in the console, SSH back in, and **re-run Phase 3**. Your workflows will be exactly where you left them!
+
+### 4. Port Check
+Ensure your `main.tf` has ports **80** and **443** open in the firewall section. Without these, the HTTPS setup will fail.
+```hcl
+  allow {
+    protocol = "tcp"
+    ports    = ["5678", "80", "443"]
+  }
+```
