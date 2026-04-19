@@ -49,17 +49,17 @@ Once you are **inside** the server terminal (prompt says `ubuntu@n8n-server`), c
 
 ```bash
 # --- ⚠️ EDIT THE TWO LINES BELOW ⚠️ ---
-DOMAIN="your-subdomain-here"
-TOKEN="your-token-here"
+DOMAIN="n8n-sawi"
+TOKEN="5d864764-3426-4c81-a646-a3c9e82982f5"
 # --------------------------------------
 
 # 1. Update DuckDNS to point to this server's IP
-echo "Linking \$DOMAIN.duckdns.org to this server..."
-curl -s "[https://www.duckdns.org/update?domains=](https://www.duckdns.org/update?domains=)\$DOMAIN&token=\$TOKEN&ip="
+echo "Linking $DOMAIN.duckdns.org to this server..."
+curl -s "https://www.duckdns.org/update?domains=$DOMAIN&token=$TOKEN&ip="
 
 # 2. Setup the HTTPS config (Caddyfile)
 cat <<EOF > Caddyfile
-\$DOMAIN.duckdns.org {
+$DOMAIN.duckdns.org {
     reverse_proxy localhost:5678
 }
 EOF
@@ -68,7 +68,7 @@ EOF
 sudo docker run -d --name caddy --restart always \
   -p 80:80 -p 443:443 \
   --network host \
-  -v \$(pwd)/Caddyfile:/etc/caddy/Caddyfile \
+  -v $(pwd)/Caddyfile:/etc/caddy/Caddyfile \
   -v caddy_data:/data \
   caddy
 
@@ -76,13 +76,13 @@ sudo docker run -d --name caddy --restart always \
 sudo docker run -d --name n8n --restart always \
   -p 5678:5678 \
   -v /home/ubuntu/n8n-data:/home/node/.n8n \
-  -e WEBHOOK_URL="https://\$DOMAIN.duckdns.org/" \
+  -e WEBHOOK_URL="https://$DOMAIN.duckdns.org/" \
   n8nio/n8n
 
 echo "--------------------------------------------------------"
 echo "✅ SETUP INITIATED!"
 echo "Wait 2 minutes for the SSL certificate to generate."
-echo "Your n8n link: https://\$DOMAIN.duckdns.org"
+echo "Your n8n link: https://$DOMAIN.duckdns.org"
 echo "--------------------------------------------------------"
 ```
 
