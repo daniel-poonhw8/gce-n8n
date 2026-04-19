@@ -90,8 +90,15 @@ echo "--------------------------------------------------------"
 
 ## 💡 Important Tips for Success
 
-### 1. The "2-Minute" Rule
-After running the script, your server needs about 120 seconds to "handshake" with the certificate authority. If you see a privacy error, simply wait and refresh.
+### 1. The "2-Minute" Rule & Progress Check
+After running the script, your server needs about 120 seconds to "handshake" with the certificate authority. 
+
+**How to check if it's ready:**
+Run this command in your terminal:
+```bash
+sudo docker logs -f caddy
+```
+Watch for a line that says: **`"msg":"certificate obtained successfully"`**. Once you see that, your site is live! (Press `Ctrl+C` to exit the logs).
 
 ### 2. Telegram Compatibility
 Because this setup uses `https`, Telegram and other services will work perfectly. Always ensure your bot settings use the `https://` version of your URL.
