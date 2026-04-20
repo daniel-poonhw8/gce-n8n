@@ -49,8 +49,8 @@ Once you are **inside** the server terminal (prompt says `ubuntu@n8n-server`), c
 
 ```bash
 # --- ⚠️ EDIT THE TWO LINES BELOW ⚠️ ---
-DOMAIN="your-subdomain-here"
-TOKEN="your-token-here"
+DOMAIN="dpbatman.duckdns.org"
+TOKEN="4b5bb84a-4949-453a-ae73-b7635a119c7c"
 # --------------------------------------
 
 # 1. Clean up any existing attempts
