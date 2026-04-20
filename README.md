@@ -49,7 +49,7 @@ Once you are **inside** the server terminal (prompt says `ubuntu@n8n-server`), c
 
 ```bash
 # --- ⚠️ EDIT THE TWO LINES BELOW ⚠️ ---
-DOMAIN="dpbatman.duckdns.org"
+DOMAIN="dpbatman"
 TOKEN="4b5bb84a-4949-453a-ae73-b7635a119c7c"
 # --------------------------------------
 
